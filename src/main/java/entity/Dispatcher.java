@@ -1,18 +1,27 @@
 package entity;
 
+import exception.MaxCantThreadsException;
+import org.apache.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import example.excepciones.MaxCantThreadsException;
+import java.util.stream.IntStream;
 
 
 public class Dispatcher {
-	
+
+	private static final String HILOS_EXCEDIDOS= "Se excedió la cantidad de hilos concurrentes, se reintentará en 12 segundos";
+	private static final String REINTENTAR= "Se reintentará en 10 segundos";
+
 	List<Operador> operadores= new ArrayList();
 	List<Supervisor> supervisores= new ArrayList();
 	List<Director> directores= new ArrayList();
+
+	final static Logger logger = Logger.getLogger(Dispatcher.class);
 	
 	// asegura atomicidad al momento de leer la variable
 	static AtomicInteger cantThreads= new AtomicInteger(1);
@@ -32,20 +41,20 @@ public class Dispatcher {
 			emp= asignarLLamadaEmpleado();			
 						
 		}catch(MaxCantThreadsException max) {
-			System.out.println(MaxCantThreadsException.getMsj());			
+			logger.info("ERROR: "+MaxCantThreadsException.getMsj());
 			
 		}catch(Exception e) {
 			// otro tratamiento del flujo
-			System.out.println("ERROR DESCONOCIDO "+e.getMessage());		
-		}		
+			logger.info("ERROR DESCONOCIDO "+e.getMessage());
+		}
 		return emp;
 	}
 	
 	
 	/**
-	 * Este m�todo valida la cantidad de Threads en ejecuci�n, si es menor de 10 retorna el numero del Thread y continua con la 
-	 * asignaci�n del empleado, de llegar a los 10 Threads en ejecuci�n el sistema realiza 3 reintentos en lapsos de 12 segundos
-	 * cada uno, pasados estos reintentos lanza una excepcion, se imprime por consola un mensaje y termina la ejecuci�n      
+	 * Este método valida la cantidad de Threads en ejecución, si es menor de 10 retorna el numero del Thread y continua con la
+	 * asignación del empleado, de llegar a los 10 Threads en ejecución el sistema realiza 3 reintentos en lapsos de 12 segundos
+	 * cada uno, pasados estos reintentos lanza una excepcion, se imprime por log un mensaje y termina la ejecución
 	 */
 	
 	private synchronized int validarCantidadThreadsEjecutandose() throws InterruptedException, MaxCantThreadsException{
@@ -60,7 +69,8 @@ public class Dispatcher {
 		}else {			
 		
 			if (reintentosThreads < 3) {									
-				System.out.println("Se excedi� la cantidad de hilos concurrentes, se reintentar� en 12 segundos");
+				logger.info(HILOS_EXCEDIDOS);
+
 				cantReintentosThreads.incrementAndGet();
 				
 				wait (12000);
@@ -78,7 +88,7 @@ public class Dispatcher {
 	
 	
 	/**
-	 * Este m�todo obtiene un empleado libre y le asigna la llamada. De no haber nadie disponible el m�todo cuenta con un sistema de 
+	 * Este método obtiene un empleado libre y le asigna la llamada. De no haber nadie disponible el método cuenta con un sistema de
 	 * reintentos en lapsos de 10 segundos 
 	 * 
 	 */
@@ -100,7 +110,7 @@ public class Dispatcher {
 			if (reintentos < 5) {
 				cantReintentosAsignacionLLamada.incrementAndGet();
 				
-				System.out.println("Se reintentar� en 10 segundos");
+				logger.info(REINTENTAR);
 				 
 				Thread.sleep(10000);
 				asignarLLamadaEmpleado();
@@ -111,60 +121,50 @@ public class Dispatcher {
 	}
 	
 	/**
-	 * Este m�todo simula un empleado atendiendo una llamada,al ingresar se le cambia su estado, para q no lo tome otro threads
+	 * Este método simula un empleado atendiendo una llamada,al ingresar se le cambia su estado, para q no lo tome otro threads
 	 */
 
 	private void atendiendoLLamada(Empleado e) throws InterruptedException {	
 		e.setEstaLibre(false);		
 		
-		// simulaci�n del tiempo de llamada entre 5 y 10 segundos
-		int tiempoLLamada= ThreadLocalRandom.current().nextInt(5000, 10000);		
+		// simulación del tiempo de llamada entre 5 y 10 segundos
+		Random r = new Random();
+		int tiempoLLamada = (int)(Math.random()*(5-10+1)+10);
+		 //dsf
+		//simulación del empleado hablando por telefono
+	    Thread.sleep(tiempoLLamada);
 		
-		//simulaci�n del empleado hablando por telefono
-	    Thread.yield();
-		
-		System.out.println("Se le asign� la llamada al empleado: "+e.getNombre()+ " y tuvo una duraci�n de: "+ tiempoLLamada+ " milisegundos");
+		logger.info("Se le asignó la llamada al empleado: "+e.getNombre()+ " y tuvo una duración de: "+
+				tiempoLLamada+ " milisegundos");
 		
 		
 	}
 	
 	
 	/**
-	 * Este m�todo obtiene un empleado libre, primero comienza buscando por operadores libres, luego supervisores libres
-	 * y por �ltimo directores libres, de encontrar retorna el empleado, caso contrario null
+	 * Este método obtiene un empleado libre, primero comienza buscando por operadores libres, luego supervisores libres
+	 * y por último directores libres, de encontrar retorna el empleado, caso contrario null
 	 * 
 	 */
 	
-	private synchronized Empleado obtenerEmpleadoDisponible() {		
-		boolean existeOperador= operadores.stream().
-		           filter(op -> op.isEstaLibre()).
-		           findFirst().isPresent();
-		
-		if (existeOperador) {           
-			return operadores.stream().
-			           filter(op -> op.isEstaLibre()).
-			           findFirst().get();
+	private synchronized Empleado obtenerEmpleadoDisponible() {
+		Optional<Operador> empleadoOperador = operadores.stream().filter(Operador::isEstaLibre).findFirst();
+
+		if (empleadoOperador.isPresent()) {
+			return empleadoOperador.get();
+
+		}else {
+			Optional<Supervisor> empleadoSupervisor = supervisores.stream().filter(Supervisor::isEstaLibre).findFirst();
 			
-		}else {			
-			boolean existeSupervisor= supervisores.stream().
-			           filter(op -> op.isEstaLibre()).
-			           findFirst().isPresent();					
-			
-			if (existeSupervisor) {				
-				return supervisores.stream().
-				           filter(op -> op.isEstaLibre()).
-				           findFirst().get();
+			if (empleadoSupervisor.isPresent()) {
+				return empleadoSupervisor.get();
 			
 			}else {
+
+				Optional<Director> director = directores.stream().filter(Director::isEstaLibre).findFirst();
 				
-				boolean existeDirector= directores.stream().
-				           filter(op -> op.isEstaLibre()).
-				           findFirst().isPresent();
-				
-				if (existeDirector) {					
-					return directores.stream().
-				           filter(op -> op.isEstaLibre()).
-				           findFirst().get();
+				if (director.isPresent()) {
+					return director.get();
 				
 				}else {
 					// no hay nadie disponible					
