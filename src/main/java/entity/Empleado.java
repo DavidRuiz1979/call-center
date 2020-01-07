@@ -5,6 +5,14 @@ public class Empleado {
 	private int dni;
 	private String nombre;
 	private boolean estaLibre;
+
+	/**
+	 * metodo genérico, es para que podamos obtener en el caso que se necesite una descripción de
+	 * las tareas que desarrolla cada uno de los diferentes empleados
+ 	 */
+	public String tareasQueDesarrolla(){
+		return "Empleado Genérico";
+	}
 	
 	public int getDni() {
 		return dni;
