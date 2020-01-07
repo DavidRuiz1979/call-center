@@ -141,7 +141,7 @@ public class Test01 {
 		List<Proceso> procesos= new ArrayList<>();
 
 		for(int i= 1; i < 15; i++) {
-			procesos.add( new Proceso(dispatcher, "Proceso "+i));
+			procesos.add( new Proceso(dispatcher));
 		}
 
 		procesos.stream().forEach( p ->{

@@ -3,15 +3,17 @@ package thread;
 import controller.Dispatcher;
 import org.apache.log4j.Logger;
 
+/**
+ *  Clase que nos va a ayudar a probar la concurrencia, para este examen, que se
+ *  corran como máximo 10 hilos de forma concurrente
+ */
 public class Proceso extends Thread {
     final static Logger logger = Logger.getLogger(Proceso.class);
 
     private Dispatcher dispatcher;
-    private String texto;
 
-    public Proceso(Dispatcher dispatcher, String texto) {
+    public Proceso(Dispatcher dispatcher) {
         this.dispatcher= dispatcher;
-        this.texto= texto;
     }
     @Override
     public void run() {
@@ -31,11 +33,4 @@ public class Proceso extends Thread {
         this.dispatcher = dispatcher;
     }
 
-    public String getTexto() {
-        return texto;
-    }
-
-    public void setTexto(String texto) {
-        this.texto = texto;
-    }
 }
