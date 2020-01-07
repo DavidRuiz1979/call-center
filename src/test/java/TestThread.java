@@ -1,4 +1,4 @@
-import entity.Dispatcher;
+import controller.Dispatcher;
 import entity.Operador;
 import entity.Supervisor;
 import java.util.ArrayList;
