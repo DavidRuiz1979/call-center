@@ -16,7 +16,6 @@ public class Proceso extends Thread {
     @Override
     public void run() {
         try {
-            logger.info(texto);
             dispatcher.dispatcherCall();
 
         } catch (Exception ex) {

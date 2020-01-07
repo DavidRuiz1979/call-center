@@ -65,6 +65,7 @@ public class Dispatcher {
 	
 	private synchronized int validarCantidadThreadsEjecutandose() throws InterruptedException, MaxCantThreadsException{
 		int reintentosThreads= cantReintentosThreads.get();
+		logger.info("Procesando el Thread: "+cantThreads);
 
 		if (cantThreads.get() <= 10) {
 			
@@ -111,8 +112,8 @@ public class Dispatcher {
 			e.setEstaLibre(true);			
 		
 		}else {
-			// reintenta como maximo 5 veces asignarle un empleado
-			if (reintentos < 5) {
+			// reintenta como maximo 3 veces asignarle un empleado
+			if (reintentos < 3) {
 				cantReintentosAsignacionLLamada.incrementAndGet();
 				
 				logger.info(REINTENTAR);
